@@ -70,7 +70,7 @@ int CDrawMap::iStartDraw(void)
 	//iDrawGrid();
 	iDrawTempl();
 	
-	//iDrawGrid();
+	iDrawGrid();
 
 	imshow(m_szNameCanvas, *m_pimCanvas);
 
@@ -89,16 +89,26 @@ bool CDrawMap::bLoad7SegImage(void)
 	char szFileName[31];
 
 	for (i = 0; LED7SEG_NUM > i; ++i) {
-		sprintf_s(szFileName, "7seg/%do.bmp", i);
-		
+		// 橙色のLED
+		sprintf_s(szFileName, "7seg_s/o%d.bmp", i);
 		m_im7SegOra[i] = imread(szFileName, -1);
-		resize(m_im7SegOra[i], m_im7SegOra[i], Size(), 0.15, 0.15, INTER_CUBIC);
+		resize(m_im7SegOra[i], m_im7SegOra[i], Size(), 0.35, 0.35, INTER_CUBIC);
 
+		// 赤色のLED
+		sprintf_s(szFileName, "7seg_s/r%d.bmp", i);
+		m_im7SegRed[i] = imread(szFileName, -1);
+		resize(m_im7SegRed[i], m_im7SegRed[i], Size(), 0.35, 0.35, INTER_CUBIC);
 	}
-	m_imSymbOra[COLON]  = imread("7seg/co.bmp", -1);
-	m_imSymbOra[PERIOD] = imread("7seg/po.bmp", -1);
-	resize(m_imSymbOra[COLON],  m_imSymbOra[COLON],  Size(), 0.15, 0.15, INTER_CUBIC);
-	resize(m_imSymbOra[PERIOD], m_imSymbOra[PERIOD], Size(), 0.15, 0.15, INTER_CUBIC);
+
+	m_imSymbOra[COLON]  = imread("7seg_s/oc.bmp", -1);
+	m_imSymbOra[PERIOD] = imread("7seg_s/op.bmp", -1);
+	resize(m_imSymbOra[COLON],  m_imSymbOra[COLON],  Size(), 0.35, 0.35, INTER_CUBIC);
+	resize(m_imSymbOra[PERIOD], m_imSymbOra[PERIOD], Size(), 0.35, 0.35, INTER_CUBIC);
+
+	m_imSymbRed[COLON] = imread("7seg_s/rc.bmp", -1);
+	m_imSymbRed[PERIOD] = imread("7seg_s/rp.bmp", -1);
+	resize(m_imSymbRed[COLON], m_imSymbRed[COLON], Size(), 0.35, 0.35, INTER_CUBIC);
+	resize(m_imSymbRed[PERIOD], m_imSymbRed[PERIOD], Size(), 0.35, 0.35, INTER_CUBIC);
 
 	return true;
 }
@@ -145,46 +155,10 @@ int CDrawMap::iDrawTempl(void)
 	putText(*m_pimCanvas, "Time",
 		cv::Point(70, 70), CV_FONT_HERSHEY_SIMPLEX,
 		0.5, RGB(0, 0, 0), 1, CV_AA);
-#if 0
-	putText(*m_pimCanvas, "2:00",
-		cv::Point(160, 70), CV_FONT_HERSHEY_SIMPLEX,
-		2.0, RGB(0, 0, 0), 2, CV_AA);
 
-	Mat imSeg0 = imread("7seg/2o.bmp", 1);
-	//Mat imSeg0 = imread("7seg/2o.bmp", 1);
-	cv::resize(imSeg0, imSeg0, Size(), 0.15, 0.15, INTER_CUBIC);
-	imshow("Debug_Window_0", imSeg0);
-	waitKey(0);
-#endif /* 0 */
-#if 0
-	//Mat imSeg0 = imread("7seg/0o.bmp", -1);
-	//Mat imSeg2 = imread("7seg/2o.bmp", -1);
-	//resize(imSeg0, imSeg0, Size(), 0.15, 0.15, INTER_CUBIC);
-	//resize(imSeg2, imSeg2, Size(), 0.15, 0.15, INTER_CUBIC);
-
-	Mat imCanvasRoi;
-
-	// デリミタの印字
-	imCanvasRoi = (*m_pimCanvas)(Rect(155, 20, m_imSymbOra[COLON].cols, m_imSymbOra[COLON].rows));
-	m_imSymbOra[COLON].copyTo(imCanvasRoi);
-	imCanvasRoi = (*m_pimCanvas)(Rect(245, 20, m_imSymbOra[PERIOD].cols, m_imSymbOra[PERIOD].rows));
-	m_imSymbOra[PERIOD].copyTo(imCanvasRoi);
-
-	// NOTE: デリミタを挟む間隔は50[px], ケタ隣りは40[px]
-	imCanvasRoi = (*m_pimCanvas)(Rect(120, 20, m_im7SegOra[2].cols, m_im7SegOra[2].rows));
-	m_im7SegOra[2].copyTo(imCanvasRoi);
-	imCanvasRoi = (*m_pimCanvas)(Rect(170, 20, m_im7SegOra[0].cols, m_im7SegOra[0].rows));
-	m_im7SegOra[0].copyTo(imCanvasRoi);
-	imCanvasRoi = (*m_pimCanvas)(Rect(210, 20, m_im7SegOra[0].cols, m_im7SegOra[0].rows));
-	m_im7SegOra[0].copyTo(imCanvasRoi);
-	imCanvasRoi = (*m_pimCanvas)(Rect(260, 20, m_im7SegOra[0].cols, m_im7SegOra[0].rows));
-	m_im7SegOra[0].copyTo(imCanvasRoi);
-
-
-
-#endif /* 1 */
-
+	// もち時間の表示
 	vDrawTimeRemain(2, 0, 0, 0, true);
+
 	// 今何回目
 	putText(*m_pimCanvas, "2",
 		cv::Point(370, 70), CV_FONT_HERSHEY_SIMPLEX,
@@ -314,6 +288,7 @@ void CDrawMap::vDrawCornPoints(char cPrevPos)
 void CDrawMap::vResetTime(void)
 {
 	m_iLeftTime = INITIAL_TIME;
+	vDrawTimeRemain(2, 0, 0, 0, true);
 	return;
 }
 
@@ -368,63 +343,80 @@ bool CDrawMap::bUpdateTimer(void)
 
 }
 
+// 残り時間の表示
 void CDrawMap::vDrawTimeRemain(int iDigit3, int iDigit2, int iDigit1, int iDigit0, bool bForce)
 {
 	static int s_iDigit[4] = { 0 };
 	Mat imCanvasRoi;
+	const int POS_COL[] = { 120, 180, 220, 280 };
+	const int POS_COL_EX[] = { 160, 260 };
+	const int POS_ROW = 20;
+	bool bRedraw = false;
 
-	if (true == bForce) {
+	Mat* pim7Seg;  // 数字のデータ
+	Mat* pimSymb;  // 記号のデータ
+	
+	if ((iDigit3 == 0) && (iDigit2 <= 2)) {
+		pim7Seg = m_im7SegRed;
+		pimSymb = m_imSymbRed;
+		bRedraw = true;
+	}
+	else {
+		pim7Seg = m_im7SegOra;
+		pimSymb = m_imSymbOra;
+	}
+
+	if ((true == bForce) || (true == bRedraw)) {
 		s_iDigit[3] = iDigit3;
 		s_iDigit[2] = iDigit2;
 		s_iDigit[1] = iDigit1;
 		s_iDigit[0] = iDigit0;
 
 		// デリミタの印字
-		imCanvasRoi = (*m_pimCanvas)(Rect(155, 20, m_imSymbOra[COLON].cols, m_imSymbOra[COLON].rows));
-		m_imSymbOra[COLON].copyTo(imCanvasRoi);
-		imCanvasRoi = (*m_pimCanvas)(Rect(245, 20, m_imSymbOra[PERIOD].cols, m_imSymbOra[PERIOD].rows));
-		m_imSymbOra[PERIOD].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL_EX[0], POS_ROW, pimSymb[COLON].cols, pimSymb[COLON].rows));
+		pimSymb[COLON].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL_EX[1], POS_ROW, pimSymb[PERIOD].cols, pimSymb[PERIOD].rows));
+		pimSymb[PERIOD].copyTo(imCanvasRoi);
 
-		// NOTE: デリミタを挟む間隔は50[px], ケタ隣りは40[px]
 		// 3桁目の表示
-		imCanvasRoi = (*m_pimCanvas)(Rect(120, 20, m_im7SegOra[iDigit3].cols, m_im7SegOra[iDigit3].rows));
-		m_im7SegOra[iDigit3].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[0], POS_ROW, pim7Seg[iDigit3].cols, pim7Seg[iDigit3].rows));
+		pim7Seg[iDigit3].copyTo(imCanvasRoi);
 
 		// 2桁目の表示
-		imCanvasRoi = (*m_pimCanvas)(Rect(170, 20, m_im7SegOra[iDigit2].cols, m_im7SegOra[iDigit2].rows));
-		m_im7SegOra[iDigit2].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[1], POS_ROW, pim7Seg[iDigit2].cols, pim7Seg[iDigit2].rows));
+		pim7Seg[iDigit2].copyTo(imCanvasRoi);
 
 		// 1桁目の表示
-		imCanvasRoi = (*m_pimCanvas)(Rect(210, 20, m_im7SegOra[iDigit1].cols, m_im7SegOra[iDigit1].rows));
-		m_im7SegOra[iDigit1].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[2], POS_ROW, pim7Seg[iDigit1].cols, pim7Seg[iDigit1].rows));
+		pim7Seg[iDigit1].copyTo(imCanvasRoi);
 
 		// 0桁目の表示
-		imCanvasRoi = (*m_pimCanvas)(Rect(260, 20, m_im7SegOra[iDigit0].cols, m_im7SegOra[iDigit0].rows));
-		m_im7SegOra[iDigit0].copyTo(imCanvasRoi);
+		imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[3], POS_ROW, pim7Seg[iDigit0].cols, pim7Seg[iDigit0].rows));
+		pim7Seg[iDigit0].copyTo(imCanvasRoi);
 	}
 
 	else {
 		if (s_iDigit[3] != iDigit3) {
-			imCanvasRoi = (*m_pimCanvas)(Rect(120, 20, m_im7SegOra[iDigit3].cols, m_im7SegOra[iDigit3].rows));
-			m_im7SegOra[iDigit3].copyTo(imCanvasRoi);
+			imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[0], POS_ROW, pim7Seg[iDigit3].cols, pim7Seg[iDigit3].rows));
+			pim7Seg[iDigit3].copyTo(imCanvasRoi);
 
 			s_iDigit[3] = iDigit3;
 		}
 		if (s_iDigit[2] != iDigit2) {
-			imCanvasRoi = (*m_pimCanvas)(Rect(170, 20, m_im7SegOra[iDigit2].cols, m_im7SegOra[iDigit2].rows));
-			m_im7SegOra[iDigit2].copyTo(imCanvasRoi);
+			imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[1], POS_ROW, pim7Seg[iDigit2].cols, pim7Seg[iDigit2].rows));
+			pim7Seg[iDigit2].copyTo(imCanvasRoi);
 
 			s_iDigit[2] = iDigit2;
 		}
 		if (s_iDigit[1] != iDigit1) {
-			imCanvasRoi = (*m_pimCanvas)(Rect(210, 20, m_im7SegOra[iDigit1].cols, m_im7SegOra[iDigit1].rows));
-			m_im7SegOra[iDigit1].copyTo(imCanvasRoi);
+			imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[2], POS_ROW, pim7Seg[iDigit1].cols, pim7Seg[iDigit1].rows));
+			pim7Seg[iDigit1].copyTo(imCanvasRoi);
 
 			s_iDigit[1] = iDigit1;
 		}
 		if (s_iDigit[0] != iDigit0) {
-			imCanvasRoi = (*m_pimCanvas)(Rect(260, 20, m_im7SegOra[iDigit0].cols, m_im7SegOra[iDigit0].rows));
-			m_im7SegOra[iDigit0].copyTo(imCanvasRoi);
+			imCanvasRoi = (*m_pimCanvas)(Rect(POS_COL[3], POS_ROW, pim7Seg[iDigit0].cols, pim7Seg[iDigit0].rows));
+			pim7Seg[iDigit0].copyTo(imCanvasRoi);
 
 			s_iDigit[0] = iDigit0;
 		}

@@ -87,8 +87,10 @@ private:
 		Point(110, 430),  // E
 		Point(110, 270)   // F
 	};
-	Mat m_im7SegOra[LED7SEG_NUM];
-	Mat m_imSymbOra[SYMBOL_NUM];
+	Mat m_im7SegOra[LED7SEG_NUM];     // 橙色のLED（数字）
+	Mat m_imSymbOra[SYMBOL_NUM];      // 橙色のLED（記号）
+	Mat m_im7SegRed[LED7SEG_NUM];     // 赤色のLED（数字）
+	Mat m_imSymbRed[SYMBOL_NUM];;     // 赤色のLED（記号）
 
 	unsigned int m_uiCurrPoint[CORNER_NUM] = { 0, 1, 2, 3, 3, 2 };  // 現在の各ポイントの点数（暫定）
 	char m_cPrevPos = INIT_POSITION;  // 前回の到達位置

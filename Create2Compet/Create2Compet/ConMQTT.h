@@ -2,7 +2,8 @@
 
 #include <MQTTClient.h>
 
-#define BRK_ADDRESS ("192.168.137.1")
+//#define BRK_ADDRESS ("192.168.137.1")
+#define BRK_ADDRESS ("127.0.0.1")
 #define CLIENT_ID   ("LEDCamp4 Viewer")
 #define TOPIC       ("/course/corner/#")
 #define QOS         (1)

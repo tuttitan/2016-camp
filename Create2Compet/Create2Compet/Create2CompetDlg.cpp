@@ -126,7 +126,8 @@ BOOL CCreate2CompetDlg::OnInitDialog()
 
 	BYTE byAddrFiled[4];
 	vSetIPAddrFiled(byAddrFiled);
-	m_ctrlAddress.SetAddress(192, 168, 137, 1);
+	//m_ctrlAddress.SetAddress(192, 168, 137, 1);
+	m_ctrlAddress.SetAddress(byAddrFiled[0], byAddrFiled[1], byAddrFiled[2], byAddrFiled[3]);
 
 	return TRUE;  // フォーカスをコントロールに設定した場合を除き、TRUE を返します。
 }
