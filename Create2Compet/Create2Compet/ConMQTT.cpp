@@ -3,18 +3,19 @@
 /*****************************************************************************/
 /* ファイルインクルード                                                      */
 /*****************************************************************************/
+#include <windows.h>
+
 #include "stdafx.h"
 #include "ConMQTT.h"
-#include <windows.h>
 #include "DrawMap.h"
-
+#include "ConSocket.h"
 
 /*****************************************************************************/
 /* 静的メンバ変数宣言                                                        */
 /*****************************************************************************/
 volatile MQTTClient_deliveryToken CConMQTT::m_deliveredtoken;
 CDrawMap* CConMQTT::s_pDrawMap = NULL;
-
+CConSocket* CConMQTT::s_pConSocket = NULL;
 
 /*****************************************************************************/
 /* メンバ関数定義                                                            */
@@ -23,24 +24,20 @@ CDrawMap* CConMQTT::s_pDrawMap = NULL;
 CConMQTT::CConMQTT()
 {
 	// コンソールを作る
-	::AllocConsole();
-	freopen_s(&m_fpConsole, "CON", "w", stdout);
-	printf("[MQTT]: CConMQTT Constructor\n");
+	//::AllocConsole();
+	//freopen_s(&m_fpConsole, "CON", "w", stdout);
+	//printf("[MQTT]: CConMQTT Constructor\n");
 }
 
 // デストラクタ
 CConMQTT::~CConMQTT()
 {
-	printf("[MQTT]: CConMQTT Destructor\n");
-	fclose(m_fpConsole);
-	::FreeConsole();
+	// コンソールを閉じる
+	//printf("[MQTT]: CConMQTT Destructor\n");
+	//fclose(m_fpConsole);
+	//::FreeConsole();
 }
-#if 0
-typedef struct _startFuncArgs_t
-{
 
-} startFuncArgs_t;
-#endif /* 0 */
 
 // 通信の開始を試みる
 DWORD __stdcall CConMQTT::startConnect(LPVOID lpArg)
@@ -140,7 +137,7 @@ int CConMQTT::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_
 	char* payloadptr;      // ペイロードの先頭アドレス
 	int iLenTopic;         // トピック長
 	int iMsg;              // メッセージ [0, 1]
-
+	unsigned int uiDummy[6]; // 暫定
 
 	// トピックとメッセージの表示
 	printf("Message arrived\n");
@@ -166,7 +163,9 @@ int CConMQTT::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_
 
 	if(1 == iMsg) {
 		printf("[Message Arrived] Enter Sensor: %c\n", topicName[iLenTopic - 1]);
-		s_pDrawMap->vUpdatePoints(topicName[iLenTopic - 1]);
+		s_pConSocket->vSetPosCorner(topicName[iLenTopic - 1]);
+		s_pConSocket->bSetSendMessage(MSG_UPDATE);
+		//s_pDrawMap->vUpdatePoints(topicName[iLenTopic - 1], uiDummy);
 	}
 	else {
 		printf("[Message Arrived] Leave Sensor: %c\n", topicName[iLenTopic - 1]);
@@ -185,5 +184,13 @@ void CConMQTT::vRelateObject(CDrawMap* pDrawMap)
 {
 	if (NULL != pDrawMap) {
 		s_pDrawMap = pDrawMap;
+	}
+}
+
+
+void CConMQTT::vRelateObject(CConSocket* pConSocket)
+{
+	if (NULL != pConSocket) {
+		s_pConSocket = pConSocket;
 	}
 }

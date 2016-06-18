@@ -54,7 +54,10 @@ public:
 
 	void 
 		vRelateObject(CConMQTT*),
-		vUpdatePoints(char cPos),
+		//vUpdatePoints(char cPos),
+		vUpdatePointTable(unsigned int[]),
+		vUpdatePoints(char, unsigned int uiPoints[]),
+
 		vResetTime(void);
 
 private:

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS   // inet_addr() 警告抑止
+
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN            // Windows ヘッダーから使用されていない部分を除外します。
 #endif
@@ -34,7 +36,7 @@
 #include <afxcontrolbars.h>     // MFC におけるリボンとコントロール バーのサポート
 
 
-
+#include <WinSock2.h>
 
 
 

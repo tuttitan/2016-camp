@@ -1,7 +1,6 @@
 ﻿/*****************************************************************************/
 /* ファイルインクルード                                                      */
 /*****************************************************************************/
-//#include "opencv2/core/core.hpp"
 #include "stdafx.h"
 #include "DrawMap.h"
 #include "windows.h"
@@ -70,7 +69,7 @@ int CDrawMap::iStartDraw(void)
 	//iDrawGrid();
 	iDrawTempl();
 	
-	iDrawGrid();
+	//iDrawGrid();
 
 	imshow(m_szNameCanvas, *m_pimCanvas);
 
@@ -344,7 +343,13 @@ bool CDrawMap::bUpdateTimer(void)
 }
 
 // 残り時間の表示
-void CDrawMap::vDrawTimeRemain(int iDigit3, int iDigit2, int iDigit1, int iDigit0, bool bForce)
+void CDrawMap::vDrawTimeRemain(
+	int iDigit3, 
+	int iDigit2, 
+	int iDigit1, 
+	int iDigit0, 
+	bool bForce
+	)
 {
 	static int s_iDigit[4] = { 0 };
 	Mat imCanvasRoi;
@@ -470,6 +475,7 @@ void CDrawMap::vRelateObject(CConMQTT* pConMQTT)
 
 // コーナーポイントの更新
 // cPosはcreate2の現在位置
+#if 0
 void CDrawMap::vUpdatePoints(char cPos)
 {
 	int i;    // ループカウンタ
@@ -503,6 +509,64 @@ void CDrawMap::vUpdatePoints(char cPos)
 	}
 	return;
 }
+#else  /* 0 */
+
+// 点数表の更新
+void CDrawMap::vUpdatePointTable(unsigned int uiPoints[])
+{
+	// 局所変数宣言
+	int i;      // ループ変数
+
+
+	for (i = 0; CORNER_NUM > i; ++i) {
+		m_uiCurrPoint[i] = uiPoints[i];
+	}
+}
+
+void CDrawMap::vUpdatePoints(char cPos, unsigned int uiPoints[])
+{
+	int i;    // ループカウンタ
+	int j;    // インデックス
+	unsigned int uiCurrPoints[CORNER_NUM] = { 0 };
+
+	if (cPos != m_cPrevPos) {
+
+		// 総得点の更新
+		m_iTotalScore += m_uiCurrPoint[(int)(cPos - 'a')];
+
+		// m_uiCurrPoint[]のコピーをとる
+		//for (i = 0; CORNER_NUM > i; ++i) {
+		//	uiCurrPoints[i] = m_uiCurrPoint[i];
+		//}
+
+		// 点数を更新する
+		j = 0;
+		for (i = 0; CORNER_NUM > i; ++i) {
+			if ((int)(cPos - 'a') == i) {
+				m_uiCurrPoint[i] = 0;
+			}
+			else {
+				m_uiCurrPoint[i] = uiPoints[j];
+				
+			}
+			++j;
+
+		}
+
+
+		// 更新スコアの表示
+		vDrawCornPoints(m_cPrevPos);
+		vDrawTotalScore();
+
+		imshow(m_szNameCanvas, *m_pimCanvas);
+		waitKey(1);
+
+		// 過去位置の更新
+		m_cPrevPos = cPos;
+	}
+	return;
+}
+#endif /* 0 */
 
 
 // 総得点の更新

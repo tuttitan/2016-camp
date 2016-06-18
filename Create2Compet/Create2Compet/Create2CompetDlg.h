@@ -17,7 +17,11 @@
 /*****************************************************************************/
 class CDrawMap;
 class CConMQTT;
+class CConSocket;
 
+/*****************************************************************************/
+/* クラス定義                                                                */
+/*****************************************************************************/
 // CCreate2CompetDlg ダイアログ
 class CCreate2CompetDlg : public CDialogEx
 {
@@ -27,7 +31,7 @@ public:
 
 // ダイアログ データ
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_Create2Compet_DIALOG };
+	enum { IDD = IDD_CREATE2COMPET_DIALOG };
 #endif
 
 	protected:
@@ -49,15 +53,16 @@ public:
 	afx_msg void OnBnClickedBtnCompet();
 
 private:
-	bool m_bCompetMode = false;            // 競技会モードか
+	bool m_bCompetMode = false;                  // 競技会モードか
 
-	static CDrawMap s_DrawMap;             // マップ描画オブジェクト
-	static CConMQTT s_ConMQTT;             // MQTT通信オブジェクト
-	static LARGE_INTEGER s_llPrevTime;     // 前回のコールバック呼出し時間 [ms]
-	static CCreate2CompetDlg* s_pOwn;           // 自身のインスタンス
-	static bool s_bFirst;                    // 初回のコールバックか
-	static DWORD s_dwBaseTime;               // コールバックの基準時間 [ms]
-	static unsigned int s_uiCntCallback;   // コールバックカウント
+	static CDrawMap           s_DrawMap;         // マップ描画オブジェクト
+	static CConMQTT           s_ConMQTT;         // MQTT通信オブジェクト
+	static CConSocket         s_ConSocket;       // ソケット通信オブジェクト
+	static LARGE_INTEGER      s_llPrevTime;      // 前回のコールバック呼出し時間 [ms]
+	static CCreate2CompetDlg* s_pOwn;            // 自身のインスタンス
+	static bool               s_bFirst;          // 初回のコールバックか
+	static DWORD              s_dwBaseTime;      // コールバックの基準時間 [ms]
+	static unsigned int       s_uiCntCallback;   // コールバックカウント
 
 public:
 	afx_msg void OnBnClickedBtnStart();
@@ -70,15 +75,31 @@ private:
 		DWORD dwTime    // system time
 		);
 
-	void vSetIPAddrFiled(BYTE byAddr[]);
+	void vSetIPAddrFiled(BYTE[], const char*);
 
 	void vStartTimerWrapper(UINT_PTR nIDEvent);
 	void vStopTimerWrapper(UINT_PTR nIDEvent);
+	void vUpdateLock(bool bCheck);
 
 public:
 	afx_msg void OnBnClickedBtnStop();
 private:
 	CButton m_ctrlBtnStart;
 	CButton m_ctrlBtnStop;
-	CIPAddressCtrl m_ctrlAddress;
+	CIPAddressCtrl m_ctrlAddressMQTT;
+	FILE* m_fpConsole = NULL;         // コンソール（ログ用）
+public:
+	afx_msg void OnBnClickedBtnDp();
+private:
+	CButton m_ctrlBtnDp;
+	CIPAddressCtrl m_ctrlAddressSocket;
+	CEdit m_ctrlEditPtInit;
+	CEdit m_ctrlEditPtSeed;
+public:
+	afx_msg void OnBnClickedChkLock();
+private:
+	CButton m_ctrlBtnChkLock;
+public:
+	afx_msg void OnBnClickedButton2();
+	afx_msg void OnBnClickedButton3();
 };
