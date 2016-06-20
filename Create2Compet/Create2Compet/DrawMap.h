@@ -23,7 +23,7 @@ using namespace cv;
 #define CANVAS_HEIGHT      (600)       // 描画エリアの高さ
 
 #define CORNER_NUM         (6)         // コーナーの数（正六角形）
-#define INITIAL_TIME       (120 * 10)  // もち時間 [centisec]
+#define INITIAL_TIME       (40 * 10)  // もち時間 [centisec]
 #define LED7SEG_NUM        (10)        // 7segで取り扱う数字（0～9）
 #define INIT_POSITION      ('a')       // create2初期位置
 
@@ -47,18 +47,18 @@ typedef enum _en_Symbol {
 class CDrawMap
 {
 public:
-	CDrawMap();
+	CDrawMap(HWND);
 	~CDrawMap();
 	int iStartDraw(void);
 	bool bUpdateTimer(void);
 
-	void 
-		vRelateObject(CConMQTT*),
+	void
 		//vUpdatePoints(char cPos),
-		vUpdatePointTable(unsigned int[]),
+		//vUpdatePointTable(unsigned int[]),
 		vUpdatePoints(char, unsigned int uiPoints[]),
 
-		vResetTime(void);
+		vResetTime(void),
+		vSetPlayStatus(bool);
 
 private:
 	int iDrawTempl(void);
@@ -69,10 +69,11 @@ private:
 	void vDrawTimeRemain(int, int, int, int, bool);
 
 private:
-	static CConMQTT* s_pConMQTT;
+	HWND m_hWnd = NULL;  // ウィンドウハンドル
+
 	Mat* m_pimCanvas = NULL;
 	char* m_szNameCanvas = "競技会実況";
-	//CvFont m_fonts[FONT_NUM];
+
 	int m_iLeftTime = INITIAL_TIME;
 	Point m_ptPoints[CORNER_NUM] = {
 		Point(240, 180),  // A
@@ -99,5 +100,5 @@ private:
 	char m_cPrevPos = INIT_POSITION;  // 前回の到達位置
 
 	int m_iTotalScore = 0;
-
+	bool m_bPlay = false;    // 競技中フラグ
 };

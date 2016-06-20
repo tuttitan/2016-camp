@@ -1,7 +1,9 @@
 ﻿
 // Create2CompetDlg.cpp : 実装ファイル
 //
-
+/*****************************************************************************/
+/* ファイルインクルード                                                      */
+/*****************************************************************************/
 #include "stdafx.h"
 #include "Create2Compet.h"
 #include "Create2CompetDlg.h"
@@ -12,24 +14,29 @@
 #include "ConSocket.h"
 #include "utility.h"
 
+
+/*****************************************************************************/
+/* 定数定義                                                                  */
+/*****************************************************************************/
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-#define NO_CONF   // 確認を行わない
+//#define NO_CONF   // 確認を行わない
 
-
-CDrawMap CCreate2CompetDlg::s_DrawMap;
-CConMQTT CCreate2CompetDlg::s_ConMQTT;
-CConSocket CCreate2CompetDlg::s_ConSocket;
-CCreate2CompetDlg*  CCreate2CompetDlg::s_pOwn = NULL;
-LARGE_INTEGER CCreate2CompetDlg::s_llPrevTime = { 0 };
+/*****************************************************************************/
+/* 静的メンバ変数宣言                                                        */
+/*****************************************************************************/
+//LARGE_INTEGER CCreate2CompetDlg::s_llPrevTime = { 0 };
 bool CCreate2CompetDlg::s_bFirst = true;                    // 初回のコールバックか
 DWORD CCreate2CompetDlg::s_dwBaseTime = 0;                  // コールバックの基準時間 [ms]
 unsigned int CCreate2CompetDlg::s_uiCntCallback = 1;        // コールバックカウント
 
-// アプリケーションのバージョン情報に使われる CAboutDlg ダイアログ
 
+/*****************************************************************************/
+/* 周辺クラス定義                                                            */
+/*****************************************************************************/
+// アプリケーションのバージョン情報に使われる CAboutDlg ダイアログ
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -61,10 +68,10 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
+/*****************************************************************************/
+/* メンバ関数定義                                                            */
+/*****************************************************************************/
 // CCreate2CompetDlg ダイアログ
-
-
-
 CCreate2CompetDlg::CCreate2CompetDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_CREATE2COMPET_DIALOG, pParent)
 {
@@ -84,6 +91,7 @@ void CCreate2CompetDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHK_LOCK, m_ctrlBtnChkLock);
 }
 
+// メッセージとの関連付け
 BEGIN_MESSAGE_MAP(CCreate2CompetDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
@@ -95,6 +103,7 @@ BEGIN_MESSAGE_MAP(CCreate2CompetDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHK_LOCK, &CCreate2CompetDlg::OnBnClickedChkLock)
 	ON_BN_CLICKED(IDC_BUTTON2, &CCreate2CompetDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CCreate2CompetDlg::OnBnClickedButton3)
+	ON_MESSAGE(WM_USER_PROC, &CCreate2CompetDlg::OnUserMessage)
 END_MESSAGE_MAP()
 
 
@@ -130,20 +139,18 @@ BOOL CCreate2CompetDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 小さいアイコンの設定
 
 	// TODO: 初期化をここに追加します。
+	// 局所変数宣言
+	unsigned int uiAddrFiled[4];  // IPアドレスのビットフィールド
+	wchar_t wszEdit[31];          // エディットボックスの文字
 
 	// コンソールを作る
 	::AllocConsole();
 	freopen_s(&m_fpConsole, "CON", "w", stdout);
 
-	// オブジェクトの関連付け
-	s_ConMQTT.vRelateObject(&s_DrawMap);
-	s_ConMQTT.vRelateObject(&s_ConSocket);
-	s_DrawMap.vRelateObject(&s_ConMQTT);
-	s_ConSocket.vRelateObject(&s_DrawMap);
-	s_pOwn = this;
-
-	unsigned int uiAddrFiled[4];  // IPアドレスのビットフィールド
-	wchar_t wszEdit[31];          // エディットボックスの文字
+	// オブジェクトの生成
+	m_pDrawMap = new CDrawMap(this->m_hWnd);
+	m_pConMqtt = new CConMQTT(this->m_hWnd);
+	m_pConSock = new CConSocket(this->m_hWnd);
 
 	// MQTTブローカーアドレスのビットフィールドを取得
 	vSplitString(BRK_ADDRESS, ".", uiAddrFiled);
@@ -153,10 +160,11 @@ BOOL CCreate2CompetDlg::OnInitDialog()
 	vSplitString(SERV_ADDRESS, ".", uiAddrFiled);
 	m_ctrlAddressSocket.SetAddress(uiAddrFiled[0], uiAddrFiled[1], uiAddrFiled[2], uiAddrFiled[3]);
 
-	
+	// 点数表の初期配列
 	wsprintf(wszEdit, L"%S", POINT_INIT);
 	m_ctrlEditPtInit.SetWindowText(wszEdit);
 
+	// 点数表のシード
 	wsprintf(wszEdit, L"%d", POINT_SEED);
 	m_ctrlEditPtSeed.SetWindowText(wszEdit);
 
@@ -170,44 +178,24 @@ BOOL CCreate2CompetDlg::OnInitDialog()
 	return TRUE;  // フォーカスをコントロールに設定した場合を除き、TRUE を返します。
 }
 
-#if 0
-// IPアドレスのバイトフィールドを取得する
-void CCreate2CompetDlg::vSetIPAddrFiled(BYTE byAddr[], const char* cszAddr)
+// デストラクタ
+CCreate2CompetDlg::~CCreate2CompetDlg()
 {
-	// 局所変数宣言
-	char *szAddr = NULL;
-	char* pszFiled;
-	int i = 0;
-	char* pszDummy;
-
-	szAddr = new char[strlen(cszAddr) + 1];
-
-	if (NULL == szAddr) {
-		return;
+	// オブジェクトの解放
+	if (NULL != m_pDrawMap) {
+		delete m_pDrawMap;
 	}
-
-	strcpy_s(szAddr, strlen(cszAddr) + 1, cszAddr);
-
-	
-	pszFiled = strtok_s(szAddr, ".", &pszDummy);
-	byAddr[i] = atoi(pszFiled);
-	++i;
-
-	while (NULL != pszFiled) {
-		pszFiled = strtok_s(NULL, "." , &pszDummy);
-		if (NULL != pszFiled) {
-			byAddr[i] = atoi(pszFiled);
-			++i;
-		}
+	if (NULL != m_pConMqtt) {
+		delete m_pConMqtt;
 	}
-
-	if (NULL != szAddr) {
-		delete[] szAddr;
+	if (NULL != m_pConSock) {
+		delete m_pConSock;
 	}
 
 	return;
 }
-#endif /* 0 */
+
+
 
 void CCreate2CompetDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -278,6 +266,7 @@ void CCreate2CompetDlg::OnCancel()
 	DestroyWindow();
 }
 
+// 競技会モード
 void CCreate2CompetDlg::OnBnClickedBtnCompet()
 {
 	// 局所変数宣言
@@ -292,44 +281,44 @@ void CCreate2CompetDlg::OnBnClickedBtnCompet()
 	m_bCompetMode = true;
 	OutputDebugString(TEXT("競技会モードに入ります\n"));
 
+
 	// Socket通信の開始
 	m_ctrlAddressSocket.GetAddress(byAddrField[0], byAddrField[1], byAddrField[2], byAddrField[3]);
 	sprintf_s(szAddr, "%d.%d.%d.%d", byAddrField[0], byAddrField[1], byAddrField[2], byAddrField[3]);
 
-	bRet = s_ConSocket.bConnect(szAddr, SOCKET_PORT);
+	bRet = m_pConSock->bConnect(szAddr, SOCKET_PORT);
 
 	if (false == bRet) {
 		AfxMessageBox(TEXT("Socket通信を確立できません"), MB_OK | MB_ICONEXCLAMATION);
-		//return;
+		return;
 	}
 
 	// 点数表サーバーへの初期化指示
-	s_ConSocket.bSetSendMessage(MSG_INIT);
+	m_pConSock->bSetSendMessage(MSG_INIT);
 	Sleep(100);
 
 	m_ctrlEditPtInit.GetWindowText(wszPoints, sizeof(wszPoints));
 	m_ctrlEditPtSeed.GetWindowText(wszSeed, sizeof(wszSeed));
 
 	sprintf_s(szMsg, "%ws:%ws", wszPoints, wszSeed);
-	s_ConSocket.bSetSendMessage(szMsg);
+	m_pConSock->bSetSendMessage(szMsg);
 
 
 	// MQTT通信の開始
 	m_ctrlAddressMQTT.GetAddress(byAddrField[0], byAddrField[1], byAddrField[2], byAddrField[3]);
 	sprintf_s(szAddr, "%d.%d.%d.%d", byAddrField[0], byAddrField[1], byAddrField[2], byAddrField[3]);
 
-	bRet = s_ConMQTT.bConnect(szAddr);
+	bRet = m_pConMqtt->bConnect(szAddr);
 	if (false == bRet) {
 		AfxMessageBox(TEXT("MQTT通信を確立できません"), MB_OK | MB_ICONEXCLAMATION);
-		//return;
+		return;
 	}
-	s_DrawMap.iStartDraw();
+
+	m_pDrawMap->iStartDraw();
+
 	m_ctrlBtnStart.EnableWindow(TRUE);
 
-	// TODO: ここにコントロール通知ハンドラー コードを追加します。
-#ifdef NO_CONF
-	//this->OnCancel();
-#endif /* NO_CONF */
+	return;
 }
 
 
@@ -343,8 +332,10 @@ void CCreate2CompetDlg::OnBnClickedBtnStart()
 	m_ctrlBtnStart.EnableWindow(FALSE);
 	m_ctrlBtnStop.EnableWindow(TRUE);
 
+	m_pDrawMap->vSetPlayStatus(true);
+
 	s_bFirst = true;
-	s_DrawMap.vResetTime();
+	m_pDrawMap->vResetTime();
 	vStartTimerWrapper(101);
 	
 }
@@ -361,71 +352,59 @@ void CCreate2CompetDlg::vStopTimerWrapper(UINT_PTR nIDEvent)
 	KillTimer(nIDEvent);
 }
 
-// 
+
 // static method
 void CALLBACK CCreate2CompetDlg::voStartTimer(
-	HWND hWnd,      // handle of CWnd that called SetTimer
-	UINT nMsg,      // WM_TIMER
+	HWND hWnd,           // handle of CWnd that called SetTimer
+	UINT nMsg,           // WM_TIMER
 	UINT_PTR nIDEvent,   // timer identification
-	DWORD dwTime    // system time
+	DWORD dwTime         // system time
 	)
 {
 	// 局所変数宣言
-	bool bContinue = true;       // 継続フラグ
-	DWORD dwDiff;                // 前回の呼出しとの差分時間 [ms]
+	DWORD dwDiff;        // 前回の呼出しとの差分時間 [ms]
 
-	static DWORD s_dwPrevTime;
 	
-
+	// 初回の呼出しの場合、基準時間を記録する
 	if (true == s_bFirst) {
 		s_dwBaseTime = dwTime;
 		s_bFirst = false;
 		s_uiCntCallback = 1;
 	}
 
-
+	// 前回のコールバックとの差分時間を計算
 	dwDiff = dwTime - s_dwBaseTime;
-
 
 	// 100[ms] 間隔の処理
 	if (s_uiCntCallback <= (dwDiff / CALLBACK_INTERVAL)) {
 		++s_uiCntCallback;
-
-		bContinue = s_DrawMap.bUpdateTimer();
-
-		// 継続できない場合は中止する
-		if (false == bContinue) {
-			s_pOwn->OnBnClickedBtnStop();
-		}
+		::SendMessage(hWnd, WM_USER_PROC, PROC_TIC_TIMER, 0);
 	}
-
 
 	return;
 }
 
 
-
-
+// 競技終了
 void CCreate2CompetDlg::OnBnClickedBtnStop()
 {
-	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 	vStopTimerWrapper(101);
+	m_pDrawMap->vSetPlayStatus(false);
 	AfxMessageBox(TEXT("競技終了です"), MB_OK | MB_ICONINFORMATION);
 
 	m_ctrlBtnStart.EnableWindow(TRUE);
 	m_ctrlBtnStop.EnableWindow(FALSE);
 }
 
-
+// 減点ボタン
 void CCreate2CompetDlg::OnBnClickedBtnDp()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 }
 
-
+// 編集のロック（ボタン押下）
 void CCreate2CompetDlg::OnBnClickedChkLock()
 {
-	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 	// 局所変数宣言
 	int iStatBtn;
 	iStatBtn = m_ctrlBtnChkLock.GetCheck();
@@ -438,6 +417,7 @@ void CCreate2CompetDlg::OnBnClickedChkLock()
 	
 }
 
+// 編集のロック
 void CCreate2CompetDlg::vUpdateLock(bool bCheck)
 {
 	if (true == bCheck) {
@@ -445,20 +425,13 @@ void CCreate2CompetDlg::vUpdateLock(bool bCheck)
 		m_ctrlAddressSocket.EnableWindow(FALSE);
 		m_ctrlEditPtInit.EnableWindow(FALSE);
 		m_ctrlEditPtSeed.EnableWindow(FALSE);
-
-		//AfxMessageBox(TEXT("true"), MB_OK | MB_ICONINFORMATION);
 	}
 	else {
 		m_ctrlAddressMQTT.EnableWindow(TRUE);
 		m_ctrlAddressSocket.EnableWindow(TRUE);
 		m_ctrlEditPtInit.EnableWindow(TRUE);
 		m_ctrlEditPtSeed.EnableWindow(TRUE);
-
-		//AfxMessageBox(TEXT("false"), MB_OK | MB_ICONINFORMATION);
 	}
-
-
-	
 
 	return;
 }
@@ -467,11 +440,48 @@ void CCreate2CompetDlg::vUpdateLock(bool bCheck)
 // 暫定コントロール
 void CCreate2CompetDlg::OnBnClickedButton2()
 {
-	s_ConSocket.bSetSendMessage(MSG_UPDATE);
+	m_pConSock->bSetSendMessage(MSG_UPDATE);
 }
 
 // 暫定コントロール
 void CCreate2CompetDlg::OnBnClickedButton3()
 {
-	s_ConSocket.bSetSendMessage(MSG_QUIT);
+	m_pConSock->bSetSendMessage(MSG_QUIT);
+}
+
+
+// ユーザーメッセージ受信
+LRESULT CCreate2CompetDlg::OnUserMessage(WPARAM wParam, LPARAM lParam)
+{
+	// 局所変数宣言
+	static unsigned int uiPoints[CORNER_NUM];
+	static char cPos = 'a';
+
+	switch (wParam) {
+
+		case PROC_RECV_MQTT:
+			// createが別のコーナーに移動した場合、点数表を更新する
+			if (cPos != *(char*)lParam) {
+				m_pConSock->bSetSendMessage(MSG_UPDATE);
+				cPos = *(char*)lParam;
+			}
+			break;
+		case PROC_RECV_SOCK:
+			// 受信メッセージから各点数を取り出す
+			vSplitString((char*)lParam, " ,[]", uiPoints);
+			m_pDrawMap->vUpdatePoints(cPos, uiPoints);
+			break;
+
+		case PROC_TIC_TIMER:
+			//bContinue = reinterpret_cast<CCreate2CompetDlg*>(hWnd)->m_pDrawMap->bUpdateTimer();
+
+			// 継続できない場合は中止する
+			if (m_pDrawMap->bUpdateTimer() == false) {
+				OnBnClickedBtnStop();
+			}
+			break;
+
+	}
+
+	return 0;
 }

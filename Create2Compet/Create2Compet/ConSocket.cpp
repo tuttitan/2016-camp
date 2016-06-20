@@ -11,6 +11,8 @@
 #include "DrawMap.h"
 #include "utility.h"
 
+#include <WinSock2.h>
+
 /*****************************************************************************/
 /* ライブラリリンク                                                          */
 /*****************************************************************************/
@@ -23,10 +25,11 @@
 /* メンバ関数定義                                                            */
 /*****************************************************************************/
 // コンストラクタ
-CConSocket::CConSocket()
+CConSocket::CConSocket(HWND hWnd)
 {
 	// 局所変数宣言
 	WSADATA wsaData;
+
 
 	// クリティカルセクションの初期化
 	InitializeCriticalSection(&m_csSend);
@@ -41,6 +44,8 @@ CConSocket::CConSocket()
 	// ソケットの作成
 	m_Socket = socket(PF_INET, SOCK_STREAM, 0);
 
+	// 親ウィンドウの関連付け
+	m_hWnd = hWnd;
 
 	return;
 }
@@ -48,8 +53,7 @@ CConSocket::CConSocket()
 // デストラクタ
 CConSocket::~CConSocket()
 {
-
-
+	// 通信の切断
 	bDisconnect();
 
 	// winsockの終了処理
@@ -70,8 +74,7 @@ CConSocket::~CConSocket()
 bool CConSocket::bConnect(const char* szAddress, unsigned int uiPort)
 {
 	// 局所変数宣言
-	//BOOL bRet = FALSE;
-	SOCKET uRet;
+	SOCKET uRet;               // 関数呼出しの戻り値
 	struct sockaddr_in addr;   // アドレス
 
 	if (-1 == m_Socket) {
@@ -84,17 +87,14 @@ bool CConSocket::bConnect(const char* szAddress, unsigned int uiPort)
 	addr.sin_port = htons(uiPort);
 	addr.sin_addr.s_addr = inet_addr(szAddress);
 
-
-
 	// 接続要求を行なう
 	uRet = connect(m_Socket, (const struct sockaddr*)&addr, sizeof(addr));
-	//bRet = m_Socket.Connect((LPCTSTR)szAddress, uiPort);
-	//bRet = m_Socket.Connect(TEXT("127.0.0.1"), uiPort);
 	if (0 != uRet) {
 		return false;
 	}
 
 	// メッセージループを開始する
+	m_bCont = true;
 	_beginthread(vStartConnThread, 0, this);
 
 	return true;
@@ -112,24 +112,29 @@ void CConSocket::vStartConnThread(void* pObj)
 bool CConSocket::bDisconnect(void)
 {
 	if (false != m_bCont) {
+		// 通信の終了を通告
+		bSetSendMessage(MSG_QUIT);
+		Sleep(200);
 
-
+		// 継続フラグをOFFにする
 		m_bCont = false;
 
 		// TODO: スレッドの終了待ちを行なう
 		closesocket(m_Socket);
 
-		//m_Socket.Close();
 	}
 
 	return true;
 }
+
+
 bool CConSocket::bSetSendMessage(const char* szMsg)
 {
 	// 局所変数宣言
 	int iLenArg = strlen(szMsg);
 	const int ciLenSend = sizeof(m_szMsgSend);
 
+	// メッセージ長のチェック
 	if (ciLenSend < iLenArg) {
 		return false;
 	}
@@ -139,10 +144,11 @@ bool CConSocket::bSetSendMessage(const char* szMsg)
 	strcpy_s(m_szMsgSend, szMsg);
 	LeaveCriticalSection(&m_csSend);
 
+	/* 送信完了まで待つ */
 	while (true != m_bSent) {
-		/* 送信完了まで待つ */
+		Sleep(0);
 	}
-	//Sleep(500);
+
 
 	return true;
 }
@@ -152,69 +158,42 @@ bool CConSocket::bSetSendMessage(const char* szMsg)
 // メッセージループ
 void CConSocket::vProcMessage(void)
 {
+	// 局所変数宣言
 	int iLenRecv = 0;    // 受信バッファ長
-	unsigned int uiPoints[CORNER_NUM];
-	//static char c = 'b';
+
 
 	// 無限ループ
 	while (true == m_bCont) {
 
-		//iLenRecv = 0;
 		// 送信メッセージがある場合
-		EnterCriticalSection(&m_csSend);
-
-		
 		if ('\0' != m_szMsgSend[0]) {
+			EnterCriticalSection(&m_csSend);
 			send(m_Socket, m_szMsgSend, strlen(m_szMsgSend), 0);
-			//m_Socket.Send(m_szMsgSend, strlen(m_szMsgSend));
-			
 
 			// 更新を行なう場合、受信を待つ
 			if (strcmp(m_szMsgSend, MSG_UPDATE) == 0) {
 				iLenRecv = recv(m_Socket, m_szMsgRecv, sizeof(m_szMsgRecv), 0);
-				//iLenRecv = m_Socket.Receive(m_szMsgRecv, sizeof(m_szMsgRecv));
+				
 				if (0 < iLenRecv) {
-					vSplitString(m_szMsgRecv, " ,[]", uiPoints);
-					//sscanf_s(m_szMsgRecv, "[%u, %u, %u, %u, %u, %u]",
-					//	&uiPoints[0], &uiPoints[1], &uiPoints[2], &uiPoints[3], &uiPoints[4], &uiPoints[5]);
-					m_pDrawMap->vUpdatePoints(m_cCurrPos, uiPoints);
-#if 0
-					// 暫定
-					c++;
-					if (c > 'f') {
-						c = 'a';
-					}
-#endif /* 0 */
+					// ウィンドウに対して受信完了のメッセージを送る
+					::PostMessage(
+						m_hWnd,
+						WM_USER_PROC, PROC_RECV_SOCK,
+						(LPARAM)&m_szMsgRecv);
+
 					iLenRecv = 0;
 				}
 			}
-
+			// 送信メッセージのフラッシュ
+			m_szMsgSend[0] = '\0';
+			LeaveCriticalSection(&m_csSend);
 		}
-		// 送信メッセージのフラッシュ
-		m_szMsgSend[0] = '\0';
 		m_bSent = true;
-		LeaveCriticalSection(&m_csSend);
 
-		Sleep(0);
-		//Sleep(2000);
-		
-
-		//Sleep(0);
+		// プロセッサの占有を防ぐため眠る
+		Sleep(100);
 	}
 
 	return;
 }
-void CConSocket::vSetPosCorner(char cPos)
-{
-	m_cCurrPos = cPos;
 
-	return;
-}
-
-
-void CConSocket::vRelateObject(CDrawMap* pObj)
-{
-	m_pDrawMap = pObj;
-
-	return;
-}

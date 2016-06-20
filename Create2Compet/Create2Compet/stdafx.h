@@ -36,7 +36,7 @@
 #include <afxcontrolbars.h>     // MFC におけるリボンとコントロール バーのサポート
 
 
-#include <WinSock2.h>
+//#include <WinSock2.h>
 
 
 
@@ -54,3 +54,11 @@
 #endif
 
 
+// ユーザーメッセージ
+#define WM_USER_PROC   (WM_USER + 0x01)      // ユーザー定義処理
+
+#define PROC_RECV_MQTT    (0x01)     // MQTT受信
+#define PROC_RECV_SOCK    (0x02)     // Socket受信
+
+#define PROC_TIC_TIMER    (0x11)     // タイマー周期
+#define PROC_FIN_TIMER    (0x12)     // タイマー終了

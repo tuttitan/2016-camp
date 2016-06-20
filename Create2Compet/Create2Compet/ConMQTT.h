@@ -18,8 +18,8 @@
 /*****************************************************************************/
 /* クラス宣言                                                                */
 /*****************************************************************************/
-class CDrawMap;
-class CConSocket;
+//class CDrawMap;
+//class CConSocket;
 
 
 /*****************************************************************************/
@@ -28,13 +28,11 @@ class CConSocket;
 class CConMQTT
 {
 public:
-	CConMQTT();                     // コンストラクタ
+	CConMQTT(HWND);                 // コンストラクタ
 	~CConMQTT();                    // デストラクタ
 	bool bConnect(const char*);     // 通信開始
 	bool bDisconnect(void);         // 通信終了
 
-	void vRelateObject(CDrawMap*);    // オブジェクトの関連付け
-	void vRelateObject(CConSocket*);  // オブジェクトの関連付け
 
 private:
 	// コールバック関数
@@ -45,10 +43,11 @@ private:
 	static DWORD __stdcall startConnect(LPVOID pvArg);    // 通信開始試行スレッド
 
 private:
-	FILE* m_fpConsole = NULL;         // コンソール（ログ用）
-	MQTTClient m_client;
+	//FILE* m_fpConsole = NULL;         // コンソール（ログ用）
+	MQTTClient m_client;    // クライアント
 	static volatile MQTTClient_deliveryToken m_deliveredtoken;
 
-	static CDrawMap* s_pDrawMap;      // DrawMapオブジェクトへのポインタ
-	static CConSocket* s_pConSocket;  // ConSocketオブジェクトへのポインタ
+
+	HWND m_hWnd = NULL;  // ウィンドウハンドル
+
 };

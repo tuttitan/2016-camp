@@ -51,21 +51,22 @@ protected:
 	void CCreate2CompetDlg::OnCancel();
 public:
 	afx_msg void OnBnClickedBtnCompet();
+	afx_msg LRESULT CCreate2CompetDlg::OnUserMessage(WPARAM wParam, LPARAM lParam);
+
+public:
+	CDrawMap*           m_pDrawMap;         // マップ描画オブジェクト
+	CConMQTT*           m_pConMqtt;         // MQTT通信オブジェクト
+	CConSocket*         m_pConSock;         // ソケット通信オブジェクト
 
 private:
 	bool m_bCompetMode = false;                  // 競技会モードか
 
-	static CDrawMap           s_DrawMap;         // マップ描画オブジェクト
-	static CConMQTT           s_ConMQTT;         // MQTT通信オブジェクト
-	static CConSocket         s_ConSocket;       // ソケット通信オブジェクト
-	static LARGE_INTEGER      s_llPrevTime;      // 前回のコールバック呼出し時間 [ms]
-	static CCreate2CompetDlg* s_pOwn;            // 自身のインスタンス
+
+	//static LARGE_INTEGER      s_llPrevTime;      // 前回のコールバック呼出し時間 [ms]
+	//static CCreate2CompetDlg* s_pOwn;            // 自身のインスタンス
 	static bool               s_bFirst;          // 初回のコールバックか
 	static DWORD              s_dwBaseTime;      // コールバックの基準時間 [ms]
 	static unsigned int       s_uiCntCallback;   // コールバックカウント
-
-public:
-	afx_msg void OnBnClickedBtnStart();
 
 private:
 	static void CALLBACK voStartTimer(
@@ -75,14 +76,17 @@ private:
 		DWORD dwTime    // system time
 		);
 
-	void vSetIPAddrFiled(BYTE[], const char*);
+	//void vSetIPAddrFiled(BYTE[], const char*);
 
 	void vStartTimerWrapper(UINT_PTR nIDEvent);
 	void vStopTimerWrapper(UINT_PTR nIDEvent);
 	void vUpdateLock(bool bCheck);
 
+
 public:
-	afx_msg void OnBnClickedBtnStop();
+	~CCreate2CompetDlg();   // デストラクタ
+	afx_msg void OnBnClickedBtnStart();   // 競技開始
+	afx_msg void OnBnClickedBtnStop();    // 競技終了
 private:
 	CButton m_ctrlBtnStart;
 	CButton m_ctrlBtnStop;
@@ -100,6 +104,6 @@ public:
 private:
 	CButton m_ctrlBtnChkLock;
 public:
-	afx_msg void OnBnClickedButton2();
-	afx_msg void OnBnClickedButton3();
+	afx_msg void OnBnClickedButton2();    // 暫定コントロール
+	afx_msg void OnBnClickedButton3();    // 暫定コントロール
 };

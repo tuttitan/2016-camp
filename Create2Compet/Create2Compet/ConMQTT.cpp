@@ -3,39 +3,35 @@
 /*****************************************************************************/
 /* ファイルインクルード                                                      */
 /*****************************************************************************/
-#include <windows.h>
-
 #include "stdafx.h"
 #include "ConMQTT.h"
 #include "DrawMap.h"
 #include "ConSocket.h"
 
+#include <windows.h>
+
 /*****************************************************************************/
 /* 静的メンバ変数宣言                                                        */
 /*****************************************************************************/
 volatile MQTTClient_deliveryToken CConMQTT::m_deliveredtoken;
-CDrawMap* CConMQTT::s_pDrawMap = NULL;
-CConSocket* CConMQTT::s_pConSocket = NULL;
+//CDrawMap* CConMQTT::s_pDrawMap = NULL;
+//CConSocket* CConMQTT::s_pConSocket = NULL;
+
 
 /*****************************************************************************/
 /* メンバ関数定義                                                            */
 /*****************************************************************************/
 // コンストラクタ
-CConMQTT::CConMQTT()
+CConMQTT::CConMQTT(HWND hWnd)
 {
-	// コンソールを作る
-	//::AllocConsole();
-	//freopen_s(&m_fpConsole, "CON", "w", stdout);
-	//printf("[MQTT]: CConMQTT Constructor\n");
+	// 親ウィンドウの関連付け
+	m_hWnd = hWnd;
 }
 
 // デストラクタ
 CConMQTT::~CConMQTT()
 {
-	// コンソールを閉じる
-	//printf("[MQTT]: CConMQTT Destructor\n");
-	//fclose(m_fpConsole);
-	//::FreeConsole();
+
 }
 
 
@@ -70,7 +66,7 @@ bool CConMQTT::bConnect(const char* szAddress)
 	//conn_opts.retryInterval = 3;
 
 	// 非同期通信におけるコールバックの設定
-	MQTTClient_setCallbacks(m_client, NULL, connlost, msgarrvd, delivered);
+	MQTTClient_setCallbacks(m_client, this, connlost, msgarrvd, delivered);
 
 	//int iWaitTime = 10;
 	//_beginthread(waitConnect, 0x200, &iWaitTime);
@@ -80,24 +76,14 @@ bool CConMQTT::bConnect(const char* szAddress)
 
 	// MQTTClient_connectOptionsのconnectTimeoutの使い方が分からなかったので
 	// スレッドの終了まちで対応
-	dwRet = WaitForSingleObject(hThread, 5000);
+	dwRet = WaitForSingleObject(hThread, 3000);
 	if (WAIT_TIMEOUT == dwRet) {
 		TerminateThread(hThread, -1);
 
 		return false;
 	}
-	//_beginthread(startConnect, 0x200, &m_client);
-	//Sleep(5 * 1000);
 
-	//_endthread()
-#if 0
-	if (MQTTClient_connect(m_client, &conn_opts) != MQTTCLIENT_SUCCESS)
-	{
-		printf("Failed to connect\n");
-		return false;
-		//exit(-1);
-	}
-#endif /* 0 */
+
 	printf("Subscribing to topic %s\nfor client %s using QoS%d\n", 
 		TOPIC, CLIENT_ID, QOS);
 	MQTTClient_subscribe(m_client, TOPIC, QOS);
@@ -137,7 +123,6 @@ int CConMQTT::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_
 	char* payloadptr;      // ペイロードの先頭アドレス
 	int iLenTopic;         // トピック長
 	int iMsg;              // メッセージ [0, 1]
-	unsigned int uiDummy[6]; // 暫定
 
 	// トピックとメッセージの表示
 	printf("Message arrived\n");
@@ -161,11 +146,13 @@ int CConMQTT::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_
 	payloadptr = (char*)message->payload;
 	iMsg = atoi(payloadptr);
 
-	if(1 == iMsg) {
+	if (1 == iMsg) {
 		printf("[Message Arrived] Enter Sensor: %c\n", topicName[iLenTopic - 1]);
-		s_pConSocket->vSetPosCorner(topicName[iLenTopic - 1]);
-		s_pConSocket->bSetSendMessage(MSG_UPDATE);
-		//s_pDrawMap->vUpdatePoints(topicName[iLenTopic - 1], uiDummy);
+		//reinterpret_cast<CConMQTT*>(context)->vTestMethod();
+		::PostMessage(
+			reinterpret_cast<CConMQTT*>(context)->m_hWnd, 
+			WM_USER_PROC, PROC_RECV_MQTT, 
+			(LPARAM)&topicName[iLenTopic - 1]);
 	}
 	else {
 		printf("[Message Arrived] Leave Sensor: %c\n", topicName[iLenTopic - 1]);
@@ -176,21 +163,4 @@ int CConMQTT::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_
 	MQTTClient_free(topicName);
 
 	return 1;
-}
-
-
-// オブジェクトの関連付け
-void CConMQTT::vRelateObject(CDrawMap* pDrawMap)
-{
-	if (NULL != pDrawMap) {
-		s_pDrawMap = pDrawMap;
-	}
-}
-
-
-void CConMQTT::vRelateObject(CConSocket* pConSocket)
-{
-	if (NULL != pConSocket) {
-		s_pConSocket = pConSocket;
-	}
 }

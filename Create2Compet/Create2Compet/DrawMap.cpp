@@ -31,16 +31,19 @@ using namespace cv;
 /*****************************************************************************/
 /* 静的メンバ関数変数宣言                                                    */
 /*****************************************************************************/
-CConMQTT* CDrawMap::s_pConMQTT = NULL;
+
 
 /*****************************************************************************/
 /* メンバ関数定義                                                            */
 /*****************************************************************************/
 
-CDrawMap::CDrawMap()
+CDrawMap::CDrawMap(HWND hWnd)
 {
 	OutputDebugString(TEXT("CDrawMapコンストラクタ\n"));
 	
+	// 親ウィンドウの関連付け
+	m_hWnd = hWnd;
+
 	return;
 }
 
@@ -224,8 +227,8 @@ int CDrawMap::iDrawTempl(void)
 		cv::Point(20, 240), CV_FONT_HERSHEY_DUPLEX,
 		0.8, scColorGray, 1, CV_AA);
 
-	// TODO: 定数に置き換える
-	vDrawCornPoints('a');
+
+	vDrawCornPoints(INIT_POSITION);
 
 	return DRAW_STAT_OK;
 }
@@ -312,20 +315,6 @@ bool CDrawMap::bUpdateTimer(void)
 	iCS = (m_iLeftTime - (iMin * 600)) % 10;
 
 #if 0
-	// 白地を作る
-	rectangle(*m_pimCanvas,
-		Point(150, 20),
-		Point(400, 80),
-		Scalar(255, 255, 255, 0),
-		CV_FILLED
-	);
-
-	//sprintf_s(szTime, "%02d:%02d", iSec, iDesi);
-	sprintf_s(szTime, "%d:%02d.%d", iMin, iSec, iCS);
-
-	putText(*m_pimCanvas, szTime,
-		cv::Point(160, 70), CV_FONT_HERSHEY_SIMPLEX,
-		2.0, RGB(0, 0, 0), 2, CV_AA);
 #else /* 0 */
 	int iSec2[2];
 
@@ -466,94 +455,28 @@ int CDrawMap::iDrawGrid(void)
 	return DRAW_STAT_OK;
 }
 
-void CDrawMap::vRelateObject(CConMQTT* pConMQTT)
-{
-	if (NULL != pConMQTT) {
-		s_pConMQTT = pConMQTT;
-	}
-}
-
-// コーナーポイントの更新
-// cPosはcreate2の現在位置
-#if 0
-void CDrawMap::vUpdatePoints(char cPos)
-{
-	int i;    // ループカウンタ
-	unsigned int uiCurrPoints[CORNER_NUM] = { 0 };
-
-	if (cPos != m_cPrevPos) {
-
-		// 総得点の更新
-		m_iTotalScore += m_uiCurrPoint[(int)(cPos - 'a')];
-
-		// m_uiCurrPoint[]のコピーをとる
-		for (i = 0; CORNER_NUM > i; ++i) {
-			uiCurrPoints[i] = m_uiCurrPoint[i];
-		}
-
-		// 点数をシフトさせる
-		for (i = 0; CORNER_NUM > i; ++i) {
-			m_uiCurrPoint[(CORNER_NUM + (int)(cPos - m_cPrevPos) + i) % CORNER_NUM] = uiCurrPoints[i];
-		}
-
-
-		// 更新スコアの表示
-		vDrawCornPoints(m_cPrevPos);
-		vDrawTotalScore();
-		
-		imshow(m_szNameCanvas, *m_pimCanvas);
-		waitKey(1);
-
-		// 過去位置の更新
-		m_cPrevPos = cPos;
-	}
-	return;
-}
-#else  /* 0 */
 
 // 点数表の更新
-void CDrawMap::vUpdatePointTable(unsigned int uiPoints[])
-{
-	// 局所変数宣言
-	int i;      // ループ変数
-
-
-	for (i = 0; CORNER_NUM > i; ++i) {
-		m_uiCurrPoint[i] = uiPoints[i];
-	}
-}
-
+// コーナーポイントの更新
+// cPosはcreate2の現在位置
 void CDrawMap::vUpdatePoints(char cPos, unsigned int uiPoints[])
 {
+	// 局所変数宣言
 	int i;    // ループカウンタ
-	int j;    // インデックス
-	unsigned int uiCurrPoints[CORNER_NUM] = { 0 };
 
-	if (cPos != m_cPrevPos) {
+
+	if ((cPos != m_cPrevPos) && (false != m_bPlay)) {
 
 		// 総得点の更新
 		m_iTotalScore += m_uiCurrPoint[(int)(cPos - 'a')];
 
-		// m_uiCurrPoint[]のコピーをとる
-		//for (i = 0; CORNER_NUM > i; ++i) {
-		//	uiCurrPoints[i] = m_uiCurrPoint[i];
-		//}
-
-		// 点数を更新する
-		j = 0;
+		// 点数表の更新
 		for (i = 0; CORNER_NUM > i; ++i) {
-			if ((int)(cPos - 'a') == i) {
-				m_uiCurrPoint[i] = 0;
-			}
-			else {
-				m_uiCurrPoint[i] = uiPoints[j];
-				
-			}
-			++j;
-
+			m_uiCurrPoint[i] = uiPoints[i];
 		}
+		m_uiCurrPoint[(int)(cPos - 'a')] = 0;
 
-
+		
 		// 更新スコアの表示
 		vDrawCornPoints(m_cPrevPos);
 		vDrawTotalScore();
@@ -564,9 +487,17 @@ void CDrawMap::vUpdatePoints(char cPos, unsigned int uiPoints[])
 		// 過去位置の更新
 		m_cPrevPos = cPos;
 	}
+
 	return;
 }
-#endif /* 0 */
+
+void CDrawMap::vSetPlayStatus(bool bFlag)
+{
+	m_bPlay = bFlag;
+
+	return;
+}
+
 
 
 // 総得点の更新
