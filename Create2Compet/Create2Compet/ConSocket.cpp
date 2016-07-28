@@ -41,9 +41,6 @@ CConSocket::CConSocket(HWND hWnd)
 	// Winsockの初期化
 	WSAStartup(MAKEWORD(2, 0), &wsaData);
 
-	// ソケットの作成
-	m_Socket = socket(PF_INET, SOCK_STREAM, 0);
-
 	// 親ウィンドウの関連付け
 	m_hWnd = hWnd;
 
@@ -56,13 +53,11 @@ CConSocket::~CConSocket()
 	// 通信の切断
 	bDisconnect();
 
+	// ソケットを閉じる
+	closesocket(m_Socket);
+
 	// winsockの終了処理
 	WSACleanup();
-
-	// コンソールを閉じる
-	//printf("[Socket]: CConMQTT Destructor\n");
-	//fclose(m_fpConsole);
-	//::FreeConsole();
 
 	// クリティカルセクションの解放
 	DeleteCriticalSection(&m_csSend);
@@ -77,8 +72,13 @@ bool CConSocket::bConnect(const char* szAddress, unsigned int uiPort)
 	SOCKET uRet;               // 関数呼出しの戻り値
 	struct sockaddr_in addr;   // アドレス
 
+	// ソケットの作成
 	if (-1 == m_Socket) {
-		return false;
+		m_Socket = socket(PF_INET, SOCK_STREAM, 0);
+
+		if (-1 == m_Socket) {
+			return false;
+		}
 	}
 
 	// 接続先の設定
@@ -118,9 +118,6 @@ bool CConSocket::bDisconnect(void)
 
 		// 継続フラグをOFFにする
 		m_bCont = false;
-
-		// TODO: スレッドの終了待ちを行なう
-		closesocket(m_Socket);
 
 	}
 

@@ -104,6 +104,7 @@ BEGIN_MESSAGE_MAP(CCreate2CompetDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CCreate2CompetDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CCreate2CompetDlg::OnBnClickedButton3)
 	ON_MESSAGE(WM_USER_PROC, &CCreate2CompetDlg::OnUserMessage)
+	ON_BN_CLICKED(IDC_BUTTON4, &CCreate2CompetDlg::OnBnClickedButton4)
 END_MESSAGE_MAP()
 
 
@@ -484,4 +485,11 @@ LRESULT CCreate2CompetDlg::OnUserMessage(WPARAM wParam, LPARAM lParam)
 	}
 
 	return 0;
+}
+
+// 暫定コントロール
+void CCreate2CompetDlg::OnBnClickedButton4()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+	m_pDrawMap->iStartDraw();
 }

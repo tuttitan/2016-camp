@@ -106,4 +106,5 @@ private:
 public:
 	afx_msg void OnBnClickedButton2();    // 暫定コントロール
 	afx_msg void OnBnClickedButton3();    // 暫定コントロール
+	afx_msg void OnBnClickedButton4();
 };

@@ -32,6 +32,12 @@ using namespace cv;
 /* 静的メンバ関数変数宣言                                                    */
 /*****************************************************************************/
 
+/*****************************************************************************/
+/* 定数定義                                                                  */
+/*****************************************************************************/
+// 暫定
+#define NUM_TEAM  (10)
+#define MAX_TEAM  (12)
 
 /*****************************************************************************/
 /* メンバ関数定義                                                            */
@@ -72,7 +78,7 @@ int CDrawMap::iStartDraw(void)
 	//iDrawGrid();
 	iDrawTempl();
 	
-	//iDrawGrid();
+	iDrawGrid();
 
 	imshow(m_szNameCanvas, *m_pimCanvas);
 
@@ -122,10 +128,165 @@ int CDrawMap::iDrawTempl(void)
 	int iVertX = 500;
 	int iHorzYL = 100;
 	int iHorzYR = 200;
+	Mat imChara;
+	Rect rect;
+	Mat imCanvasRoi;
 
 	// 7seg画像の読込み
 	bLoad7SegImage();
 
+
+
+	// 競技終了までの貼り付け
+	imChara = imread("chara/until.bmp", -1);
+	rect = Rect(10, 10, imChara.cols, imChara.rows);
+	imCanvasRoi = (*m_pimCanvas)(rect);
+	imChara.copyTo(imCanvasRoi);
+
+#if 0
+	putText(*m_pimCanvas, "Remaining", 
+		cv::Point(30, 40), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+	putText(*m_pimCanvas, "Time",
+		cv::Point(70, 70), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+#endif /* 0 */
+
+	// もち時間の表示
+	vDrawTimeRemain(2, 0, 0, 0, true);
+
+	// 今何回目
+	putText(*m_pimCanvas, "1",
+		cv::Point(400, 75), CV_FONT_HERSHEY_SIMPLEX,
+		1.0, RGB(0, 0, 0), 2, CV_AA);
+
+
+	imChara = imread("chara/times.bmp", -1);
+	rect = Rect(430, 60, imChara.cols, imChara.rows);
+	imCanvasRoi = (*m_pimCanvas)(rect);
+	imChara.copyTo(imCanvasRoi);
+
+#if 0
+	putText(*m_pimCanvas, "chal.",
+		cv::Point(430, 70), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+#endif /* 0 */
+	// 得点
+#if 0
+	putText(*m_pimCanvas, "Score",
+		cv::Point(520, 30), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+
+#endif /* 0 */
+
+	imChara = imread("chara/score.bmp", -1);
+	rect = Rect(520, 20, imChara.cols, imChara.rows);
+	imCanvasRoi = (*m_pimCanvas)(rect);
+	imChara.copyTo(imCanvasRoi);
+
+	putText(*m_pimCanvas, "0",
+		cv::Point(570, 70), CV_FONT_HERSHEY_SIMPLEX,
+		1.2, RGB(0, 0, 255), 2, CV_AA);
+
+	// 順位
+#if 0
+	putText(*m_pimCanvas, "Prize",
+		cv::Point(670, 30), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+#endif /* 0 */
+	imChara = imread("chara/prize.bmp", -1);
+	rect = Rect(670, 20, imChara.cols, imChara.rows);
+	imCanvasRoi = (*m_pimCanvas)(rect);
+	imChara.copyTo(imCanvasRoi);
+	putText(*m_pimCanvas, "4",
+		cv::Point(720, 70), CV_FONT_HERSHEY_SIMPLEX,
+		1.2, RGB(0, 0, 255), 2, CV_AA);
+
+	// チーム名
+#if 0
+	putText(*m_pimCanvas, "Team",
+		cv::Point(520, 110), CV_FONT_HERSHEY_SIMPLEX,
+		0.5, RGB(0, 0, 0), 1, CV_AA);
+
+#endif /* 0 */
+	imChara = imread("chara/team.bmp", -1);
+	rect = Rect(520, 100, imChara.cols, imChara.rows);
+	imCanvasRoi = (*m_pimCanvas)(rect);
+	imChara.copyTo(imCanvasRoi);
+
+	putText(*m_pimCanvas, "Toppers",
+		cv::Point(550, 170), CV_FONT_HERSHEY_SIMPLEX,
+		1.5, RGB(0, 0, 255), 2, CV_AA);
+
+	// 順位表
+	int x = 530;
+	int y = 240;
+	const char* szPrizes[MAX_TEAM] = { 
+		"1st", "2nd", "3rd", "4th", "5th",
+		"6th", "7th", "8th", "9th", "10th", "11th", "12th" };
+
+	for (int i = 0; i < NUM_TEAM; i++) {
+		putText(*m_pimCanvas, szPrizes[i],
+			cv::Point(x, y), CV_FONT_HERSHEY_SIMPLEX,
+			0.5, RGB(0, 0, 0), 1, CV_AA);
+		y += 30;
+	}
+
+	x = 730;
+	y = 240;
+	for (int i = 0; i < NUM_TEAM; i++) {
+		putText(*m_pimCanvas, "1234",
+			cv::Point(x, y), CV_FONT_HERSHEY_SIMPLEX,
+			0.5, RGB(0, 0, 0), 1, CV_AA);
+		y += 30;
+	}
+	y -= 20;
+
+	// 表の横線（上）
+	line(*m_pimCanvas,
+		Point(iVertX + 20, iHorzYR + 20),
+		Point(CANVAS_WIDTH - 20, iHorzYR + 20),
+		scColorGray,
+		1
+	);
+	// 表の横線（下）
+	line(*m_pimCanvas,
+		Point(iVertX + 20, y),
+		Point(CANVAS_WIDTH - 20, y),
+		scColorGray,
+		1
+	);
+
+	// 表の縦線（左から1番目）
+	line(*m_pimCanvas,
+		Point(iVertX + 20, iHorzYR + 20),
+		Point(iVertX + 20, y),
+		scColorGray,
+		1
+		);
+	// 表の縦線（左から2番目）
+	line(*m_pimCanvas,
+		Point(iVertX + 80, iHorzYR + 20),
+		Point(iVertX + 80, y),
+		scColorGray,
+		1
+		);
+	// 表の縦線（左から3番目）
+	line(*m_pimCanvas,
+		Point(iVertX + 220, iHorzYR + 20),
+		Point(iVertX + 220, y),
+		scColorGray,
+		1
+		);
+	// 表の縦線（左から4番目）
+	line(*m_pimCanvas,
+		Point(iVertX + 280, iHorzYR + 20),
+		Point(iVertX + 280, y),
+		scColorGray,
+		1
+		);
+
+	/* *** 分割線の描画 *** */
 	// 縦の分割線
 	line(*m_pimCanvas,
 		Point(iVertX, 0),
@@ -150,57 +311,12 @@ int CDrawMap::iDrawTempl(void)
 		2
 	);
 
-	// 残り時間
-	putText(*m_pimCanvas, "Remaining", 
-		cv::Point(30, 40), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-	putText(*m_pimCanvas, "Time",
-		cv::Point(70, 70), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-
-	// もち時間の表示
-	vDrawTimeRemain(2, 0, 0, 0, true);
-
-	// 今何回目
-	putText(*m_pimCanvas, "2",
-		cv::Point(370, 70), CV_FONT_HERSHEY_SIMPLEX,
-		1.2, RGB(0, 0, 0), 2, CV_AA);
-
-	putText(*m_pimCanvas, "chal.",
-		cv::Point(400, 70), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-
-	// 得点
-	putText(*m_pimCanvas, "Score",
-		cv::Point(520, 30), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-	putText(*m_pimCanvas, "0",
-		cv::Point(570, 70), CV_FONT_HERSHEY_SIMPLEX,
-		1.2, RGB(0, 0, 255), 2, CV_AA);
-
-	// 順位
-	putText(*m_pimCanvas, "Prize",
-		cv::Point(670, 30), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-	putText(*m_pimCanvas, "4",
-		cv::Point(720, 70), CV_FONT_HERSHEY_SIMPLEX,
-		1.2, RGB(0, 0, 255), 2, CV_AA);
-
-	// チーム名
-	putText(*m_pimCanvas, "Team",
-		cv::Point(520, 110), CV_FONT_HERSHEY_SIMPLEX,
-		0.5, RGB(0, 0, 0), 1, CV_AA);
-	putText(*m_pimCanvas, "Toppers",
-		cv::Point(550, 170), CV_FONT_HERSHEY_SIMPLEX,
-		1.5, RGB(0, 0, 255), 2, CV_AA);
-
-
 	// 実況図貼り付け
 	Mat imTemplMap = imread(TOP_VIEW_MAP_FILE, -1);
-	Rect rect(10, 110, 480, 480);
+	rect = Rect(10, 110, 480, 480);
 
 	// ROI指定
-	Mat imCanvasRoi = (*m_pimCanvas)(rect);
+	imCanvasRoi = (*m_pimCanvas)(rect);
 	imTemplMap.copyTo(imCanvasRoi);
 
 	
@@ -298,10 +414,10 @@ void CDrawMap::vResetTime(void)
 bool CDrawMap::bUpdateTimer(void)
 {
 	// 局所変数宣言
-	char szTime[15];
-	int iSec = 0;
-	int iMin = 0;
-	int iCS = 0;
+	//char szTime[15];
+	int iSec = 0;  // 秒
+	int iMin = 0;  // 分
+	int iCS  = 0;  // 0.1秒
 
 	// 残り時間の更新
 	--m_iLeftTime;
@@ -312,18 +428,17 @@ bool CDrawMap::bUpdateTimer(void)
 	// 各桁の計算
 	iMin = m_iLeftTime / (60 * 10);
 	iSec = (m_iLeftTime - (iMin * 600)) / 10;
-	iCS = (m_iLeftTime - (iMin * 600)) % 10;
+	iCS  = (m_iLeftTime - (iMin * 600)) % 10;
 
-#if 0
-#else /* 0 */
-	int iSec2[2];
+
+	int iSec2[2];   // 秒 [1: 2桁目, 0: 1桁目]
 
 	iSec2[1] = iSec / 10;
 	iSec2[0] = iSec % 10;
 
 	vDrawTimeRemain(iMin, iSec2[1], iSec2[0], iCS, false);
 
-#endif /* 0 */
+	// 画面更新
 	imshow(m_szNameCanvas, *m_pimCanvas);
 	waitKey(1);
 
@@ -342,8 +457,17 @@ void CDrawMap::vDrawTimeRemain(
 {
 	static int s_iDigit[4] = { 0 };
 	Mat imCanvasRoi;
-	const int POS_COL[] = { 120, 180, 220, 280 };
-	const int POS_COL_EX[] = { 160, 260 };
+	const int POS_BASE_LEFT = 150;
+	const int POS_COL[] = { 
+		POS_BASE_LEFT, 
+		POS_BASE_LEFT + 60, 
+		POS_BASE_LEFT + 100, 
+		POS_BASE_LEFT + 160
+	};
+	const int POS_COL_EX[] = { 
+		POS_BASE_LEFT + 40, 
+		POS_BASE_LEFT + 140
+	};
 	const int POS_ROW = 20;
 	bool bRedraw = false;
 

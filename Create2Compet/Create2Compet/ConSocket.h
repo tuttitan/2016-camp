@@ -43,7 +43,7 @@ private:
 	void vProcMessage(void);                // メッセージ処理ループ
 	
 private:
-	SOCKET m_Socket;                  // ソケット
+	SOCKET m_Socket = -1;             // ソケット
 	HWND m_hWnd;                      // ウィンドウハンドル
 	char m_szMsgSend[127];            // 送信メッセージ
 	char m_szMsgRecv[127];            // 受信メッセージ
