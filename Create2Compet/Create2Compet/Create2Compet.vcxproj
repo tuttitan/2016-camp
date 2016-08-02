@@ -116,6 +116,19 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>copy "*.ini" "../$(Configuration)" /-Y
+copy "*.bmp" "../$(Configuration)" /Y
+xcopy "7seg_s" "../$(Configuration)/7seg_s" /D /I /Y /S
+xcopy "chara" "../$(Configuration)/chara" /D /I /Y /S
+xcopy "Broker" "../$(Configuration)/Broker" /D /I /Y /S
+xcopy "Script" "../$(Configuration)/Script" /D /I /Y /S
+cd ..
+xcopy "dll/$(Configuration)" "$(Configuration)" /D /I /Y /S
+cd dll
+copy "*.dll" "../$(Configuration)/" /Y
+cd ..</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -165,6 +178,19 @@
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>copy "*.ini" "../$(Configuration)" /-Y
+copy "*.bmp" "../$(Configuration)" /Y
+xcopy "7seg_s" "../$(Configuration)/7seg_s" /D /I /Y /S
+xcopy "chara" "../$(Configuration)/chara" /D /I /Y /S
+xcopy "Broker" "../$(Configuration)/Broker" /D /I /Y /S
+xcopy "Script" "../$(Configuration)/Script" /D /I /Y /S
+cd ..
+xcopy "dll/$(Configuration)" "$(Configuration)" /D /I /Y /S
+cd dll
+copy "*.dll" "../$(Configuration)/" /Y
+cd ..</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -197,10 +223,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConMQTT.h" />
+    <ClInclude Include="ConSettingDlg.h" />
     <ClInclude Include="ConSocket.h" />
     <ClInclude Include="DrawMap.h" />
     <ClInclude Include="Create2Compet.h" />
     <ClInclude Include="Create2CompetDlg.h" />
+    <ClInclude Include="IniConfig.h" />
+    <ClInclude Include="Scorer.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -208,10 +237,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConMQTT.cpp" />
+    <ClCompile Include="ConSettingDlg.cpp" />
     <ClCompile Include="ConSocket.cpp" />
     <ClCompile Include="DrawMap.cpp" />
     <ClCompile Include="Create2Compet.cpp" />
     <ClCompile Include="Create2CompetDlg.cpp" />
+    <ClCompile Include="IniConfig.cpp" />
+    <ClCompile Include="Scorer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

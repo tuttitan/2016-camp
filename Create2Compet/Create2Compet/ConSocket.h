@@ -15,9 +15,15 @@
 //#define   SERV_ADDRESS ("192.168.137.11")    // 点数表問い合わせサーバーIPアドレス
 #define   POINT_SEED   (544)           // 乱数シード
 //#define   POINT_INIT   ("1,1,2,2,3,3")  // 点数の初期値
+
+
+// TODO: INIファイルで指定できるようにする
+// TODO: デフォルト値を定数で定義しておく
 #define   POINT_INIT   ("2,1,3,3,2,1")  // 点数の初期値
 
 #define   SOCKET_PORT  (4000)           // ポート番号
+#define   SCRIPT_NANE  ("tcp_server.py")
+#define CMD_PYTHON     ("python")
 
 
 /*****************************************************************************/
