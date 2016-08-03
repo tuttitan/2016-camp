@@ -7,6 +7,8 @@
 
 #include "opencv2/imgproc/imgproc.hpp"
 
+#include <locale.h>    // setlocale()
+
 
 /*****************************************************************************/
 /* ライブラリリンク                                                          */
@@ -77,14 +79,39 @@ void CDrawMap::vDestroyWindows(void)
 
 int CDrawMap::iStartDraw(void)
 {
+	// 局所変数宣言
+	wchar_t* pwszWndName = NULL;
+	size_t   sizeConv;
+	int      iLenStr;
+	LONG     lWndStyle;
+	HWND     hWnd;
 
+	// Canvasメモリの確保
 	m_pimCanvas = new Mat(CANVAS_HEIGHT, CANVAS_WIDTH, CV_8UC3);
-
-
-	if (NULL == m_pimCanvas) {
+		if (NULL == m_pimCanvas) {
 		return DRAW_STAT_ERR_NULL;
 	}
-	namedWindow(m_szNameCanvas, CV_WINDOW_AUTOSIZE);
+
+	// ウインドウを作る
+	cvNamedWindow(m_szNameCanvas, CV_WINDOW_AUTOSIZE);
+
+	// ウインドウからボタンを消す
+	iLenStr = strlen(m_szNameCanvas) + 1;
+	pwszWndName = new wchar_t[iLenStr];
+
+	setlocale(LC_ALL, "japanese");
+	mbstowcs_s(&sizeConv, pwszWndName, iLenStr, m_szNameCanvas, _TRUNCATE);
+	hWnd = FindWindow(0, pwszWndName);
+
+	lWndStyle = GetWindowLong(hWnd, GWL_STYLE);
+	lWndStyle &= ~WS_SYSMENU;
+	SetWindowLong(hWnd, GWL_STYLE, lWndStyle);
+
+	if (NULL != pwszWndName) {
+		delete[] pwszWndName;
+		pwszWndName = NULL;
+	}
+	//SetWindowLong(s_hWndTest, GWL_STYLE, ~WS_VISIBLE);
 
 	*m_pimCanvas = Scalar(255.0, 255.0, 255.0);
 
@@ -686,5 +713,34 @@ void CDrawMap::vSetCurrPoints(unsigned int uiPoints[])
 		m_uiCurrPoint[i] = uiPoints[i];
 	}
 
+	return;
+}
+
+
+// テスト用暫定
+void CDrawMap::vWindowTestOn(void)
+{
+	cvNamedWindow("テストウインドウ", CV_WINDOW_AUTOSIZE);
+	//m_hWndTest = (HWND)cvGetWindowHandle("テストウインドウ");
+	cvResizeWindow("テストウインドウ", 300, 200);
+
+#if 0
+	s_hWndTest = FindWindow(0, TEXT("テストウインドウ"));
+	//s_hWndTest = (HWND)cvGetWindowHandle("テストウインドウ");
+
+	LONG lStyle = GetWindowLong(s_hWndTest, GWL_STYLE);
+	lStyle &= ~WS_SYSMENU;
+	SetWindowLong(s_hWndTest, GWL_STYLE, lStyle);
+	//SetWindowLong(s_hWndTest, GWL_STYLE, ~WS_VISIBLE);
+
+	//imshow("テストウインドウ", NULL);
+
+	waitKey(0);
+#endif
+	return;
+}
+void CDrawMap::vWindowTestOff(void)
+{
+	destroyWindow("テストウインドウ");
 	return;
 }

@@ -100,6 +100,7 @@ private:
 	//void vLaunchExtProc(wchar_t*, PROCESS_INFORMATION*);
 	void vAddServList(const TCHAR*);
 	bool bCallExtProcesses(void);
+	bool bGetAbsolutePath(enIniProfile, enIniProfile, CString, CString&);
 
 
 public:

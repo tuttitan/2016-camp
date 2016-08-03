@@ -2,5 +2,5 @@
 
 
 void vSplitString(const char*, const char*, unsigned int[]);
-bool bLaunchExtProc(wchar_t*, PROCESS_INFORMATION*);
+bool bLaunchExtProc(CString, PROCESS_INFORMATION*);
 //static BOOL CALLBACK bEnumWindowsProc(HWND hWnd, LPARAM lParam);

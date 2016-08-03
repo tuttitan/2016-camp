@@ -43,7 +43,8 @@ void vSplitString(const char* cszMsg, const char* cszDelim, unsigned int uiDstVa
 
 // 外部プロセスの起動
 bool bLaunchExtProc(
-	wchar_t* ptszCommand,
+	//wchar_t* ptszCommand,
+	CString strCommand,
 	PROCESS_INFORMATION* pProcInfo)
 {
 	// 局所変数宣言
@@ -52,7 +53,8 @@ bool bLaunchExtProc(
 	STARTUPINFO stStartupInfo = { 0 };
 
 	// コマンドのコピー
-	_tcscpy_s(tszAppName, ptszCommand);
+	//_tcscpy_s(tszAppName, ptszCommand);
+	_tcscpy_s(tszAppName, strCommand);
 
 
 	// スタートアップ情報の設定

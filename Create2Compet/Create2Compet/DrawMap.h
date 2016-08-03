@@ -106,4 +106,10 @@ private:
 
 	int m_iTotalScore = 0;
 	bool m_bPlay = false;    // 競技中フラグ
+
+public:
+	static void vWindowTestOn(void);
+	static void vWindowTestOff(void);
+private:
+	//static HWND s_hWndTest;
 };

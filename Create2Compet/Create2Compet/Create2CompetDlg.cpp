@@ -122,7 +122,7 @@ BEGIN_MESSAGE_MAP(CCreate2CompetDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON3, &CCreate2CompetDlg::OnBnClickedButton3)
 	ON_MESSAGE(WM_USER_PROC, &CCreate2CompetDlg::OnUserMessage)
 	ON_BN_CLICKED(IDC_BUTTON4, &CCreate2CompetDlg::OnBnClickedButton4)
-//	ON_BN_CLICKED(IDC_BUTTON5, &CCreate2CompetDlg::OnBnClickedButton5)
+	ON_BN_CLICKED(IDC_BUTTON5, &CCreate2CompetDlg::OnBnClickedButton5)
 	ON_BN_CLICKED(IDC_RADIO_MODE, &CCreate2CompetDlg::OnBnClickedRadioMode)
 	ON_BN_CLICKED(IDC_RADIO_MODE2, &CCreate2CompetDlg::OnBnClickedRadioMode)
 	ON_CBN_SELCHANGE(IDC_CMB_SERV, &CCreate2CompetDlg::OnCbnSelchangeCmbServ)
@@ -372,41 +372,92 @@ void CCreate2CompetDlg::OnCancel()
 bool CCreate2CompetDlg::bCallExtProcesses(void)
 {
 	// 局所変数宣言
-	wchar_t wszBinBroker[MAX_PATH] = TEXT("");
-	wchar_t wszBinScorer[MAX_PATH] = TEXT("");
-	wchar_t wszCmdBroker[MAX_PATH] = CMD_PRPT;
-	wchar_t wszCmdScorer[MAX_PATH] = CMD_PRPT;
+	//wchar_t wszBinBroker[MAX_PATH] = TEXT("");
+	//wchar_t wszBinScorer[MAX_PATH] = TEXT("");
+	//wchar_t wszCmdBroker[MAX_PATH] = CMD_PRPT;
+	//wchar_t wszCmdScorer[MAX_PATH] = CMD_PRPT;
 	int     iRet;
 	bool    bRet;
 	CString strBinName;
 	CString strMsg;
 	DWORD   dwExitCode;
 
+	CString strFullPathBin;    // Brokerバイナリのフルパス名
+	CString strFullPathConf;   // Broker設定ファイルのフルパス名
+	CString strCommand;        // コマンド名
+	CString strServName;       // 接続サーバー名
 
 	// GUIよりデータ取得
 	UpdateData(TRUE);
 
 	if (m_iCmbServ != m_iIndexLastSL) {
+
+		// Brokerバイナリのフルパス名の取得
+		bRet = bGetAbsolutePath(PROF_MQT_PATH, PROF_MQT_BIN, TEXT("Broker"), strFullPathBin);
+		if (false == bRet) {
+			strMsg.Format(TEXT("%s\r\n  >>%s"), TEXT("ブローカーの実行ファイルが見つかりません。"), (LPCTSTR)strFullPathBin);
+			vAppendLogMsg(strMsg);
+			return false;
+		}
+
+		// Broker設定ファイルのフルパス名の取得
+		if ((1 == m_iCmbServ) || (2 == m_iCmbServ)) {
+			bRet = bGetAbsolutePath(PROF_MQT_PATH, 
+				(1 == m_iCmbServ) ? PROF_MQT_CONF1 : PROF_MQT_CONF2, TEXT("Broker"), strFullPathConf);
+		}
+		if (false == bRet) {
+			strMsg.Format(TEXT("%s\r\n  >>%s"), 
+				TEXT("ブローカーの設定ファイルが見つかりません。設定ファイルを確認して下さい。"), (LPCTSTR)strFullPathConf);
+			vAppendLogMsg(strMsg);
+			return false;
+		}
+		
+		// Broker実行コマンドの決定
+		if (0 == m_iCmbServ) {
+			strCommand.Format(TEXT("%s %s -v"), CMD_PRPT, (LPCTSTR)strFullPathBin);
+		}
+		else {
+			strCommand.Format(TEXT("%s %s -v -c %s"), CMD_PRPT, (LPCTSTR)strFullPathBin, (LPCTSTR)strFullPathConf);
+		}
+
+
 		// TODO: iniファイルで指定できるようにする
 		// NOTE: とりあえずパスは決め打ち
 		// ブローカープロセスの起動
+#if 0
 		GetCurrentDirectory(sizeof(wszBinBroker) - 1, wszBinBroker);
 		wcscat_s(wszBinBroker, LOCAL_BROKER);
 		wcscat_s(wszCmdBroker, TEXT(" "));
 		wcscat_s(wszCmdBroker, wszBinBroker);
-		bRet = bLaunchExtProc(wszCmdBroker, &m_ProcInfoBroker);
+#endif 
+		//bRet = bLaunchExtProc(wszCmdBroker, &m_ProcInfoBroker);
+		bRet = bLaunchExtProc(strCommand, &m_ProcInfoBroker);
 		Sleep(100);
 		// プロセスの終了状態を調べる
 		GetExitCodeProcess(m_ProcInfoBroker.hProcess, &dwExitCode);
 
 		if ((true != bRet) || (STILL_ACTIVE != dwExitCode)) {
 			strMsg.Format(TEXT("%s\r\n  >> %s"),
-				TEXT("ブローカープロセスの起動に失敗しました。指定したパスに実行ファイルがあるか確認して下さい。"),
-				(LPCTSTR)wszBinBroker);
+				TEXT("ブローカープロセスの起動に失敗しました。"),
+				(LPCTSTR)strCommand);
 			vAppendLogMsg(strMsg);
 			return false;
 		}
 
+		// Scorerスクリプトのフルパス名の取得
+		bRet = bGetAbsolutePath(PROF_SOC_PATH, PROF_SOC_NAME, TEXT("Script"), strFullPathBin);
+		if (false == bRet) {
+			strMsg.Format(TEXT("%s\r\n  >>%s"), TEXT("スコアラーの実行スクリプトが見つかりません。"), (LPCTSTR)strFullPathBin);
+			vAppendLogMsg(strMsg);
+			return false;
+		}
+
+		//Scorer実行コマンドの決定
+		m_IniConfig.bGetProfile(PROF_GEN_PYTHON_BIN, strBinName);
+		m_ctrlCmbServ.GetLBText(m_iCmbServ, strServName);
+		strCommand.Format(TEXT("%s %s %s %s"), CMD_PRPT, (LPCTSTR)strBinName, (LPCTSTR)strFullPathBin, (LPCTSTR)strServName);
+
+#if 0
 		// スコアラープロセスの起動
 		GetCurrentDirectory(sizeof(wszBinScorer) - 1, wszBinScorer);
 		wcscat_s(wszBinScorer, LOCAL_SCORER);
@@ -417,16 +468,17 @@ bool CCreate2CompetDlg::bCallExtProcesses(void)
 
 		wcscat_s(wszCmdScorer, TEXT(" "));
 		wcscat_s(wszCmdScorer, wszBinScorer);
-		bRet = bLaunchExtProc(wszCmdScorer, &m_ProcInfoScorer);
+#endif /* 0 */
+		bRet = bLaunchExtProc(strCommand, &m_ProcInfoScorer);
 		Sleep(100);
 		// プロセスの終了状態を調べる
 		GetExitCodeProcess(m_ProcInfoScorer.hProcess, &dwExitCode);
 
 		if ((true != bRet) || (STILL_ACTIVE != dwExitCode)) {
 			strMsg.Format(TEXT("%s\r\n  >> %s\r\n  >> %s"),
-				TEXT("スコアラープロセスの起動に失敗しました。Pythonのバイナリー名および指定したパスにスクリプトファイルがあるか確認して下さい。"),
+				TEXT("スコアラープロセスの起動に失敗しました。Pythonのバイナリー名を確認して下さい"),
 				(LPCTSTR)strBinName,
-				(LPCTSTR)wszBinScorer);
+				(LPCTSTR)strCommand);
 			vAppendLogMsg(strMsg);
 			return false;
 		}
@@ -437,6 +489,59 @@ bool CCreate2CompetDlg::bCallExtProcesses(void)
 			vAppendLogMsg(TEXT("通信のための外部プロセスを起動させて下さい。"));
 			return false;
 		}
+	}
+
+	return true;
+}
+
+// パス名とファイル名を組み合わせて文字列を返す
+// ファイルがパスに存在しない場合は、現在のフォルダ＋サブフォルダ＋ファイル名を文字列として返す
+// この場合、ファイルの存在確認は行なわない
+bool CCreate2CompetDlg::bGetAbsolutePath(
+	enIniProfile enProfPath,
+	enIniProfile enProfFile,
+	CString      strSubDir,
+	CString&     strFullName)
+{
+	// 局所変数宣言
+	bool bRet1;         // 関数呼出しの戻り値
+	bool bRet2;         // 関数呼出しの戻り値
+	CString strPath;    // パス名
+	CString strFile;    // ファイル名
+	CFileFind  Finder;
+	wchar_t wszTargDir[MAX_PATH];
+
+	CString strMsg;    // ログ用メッセージ
+
+
+	strFullName = TEXT("");
+	bRet1 = m_IniConfig.bGetProfile(enProfPath, strPath);
+	bRet2 = m_IniConfig.bGetProfile(enProfFile, strFile);
+
+	// プロファイルを取得できた場合
+	if ((false != bRet1) && (false != bRet2)) {
+		strFullName.Format(TEXT("%s\\%s"), (LPCTSTR)strPath, (LPCTSTR)strFile);
+
+		// ファイルが見つからなかった場合
+		if (TRUE != Finder.FindFile(strFullName)) {
+			strFullName = TEXT("");
+
+			strMsg.Format(TEXT("%s\r\n  >> %s"),
+				TEXT("指定されたパスにファイルが存在しません。"),
+				TEXT(">> MQTTブローカーIPアドレス"), (LPCTSTR)strFullName);
+			vAppendLogMsg(strMsg);
+		}
+	}
+
+	if (strFullName.IsEmpty()) {
+		GetCurrentDirectory(sizeof(wszTargDir) / sizeof(wchar_t) - 1, wszTargDir);
+		strFullName.Format(TEXT("%s\\%s\\%s"),
+			wszTargDir, (LPCTSTR)strSubDir, (LPCTSTR)strFile);
+	}
+
+	// ローカルのサブディレクトリにもファイルが存在しない場合
+	if (TRUE != Finder.FindFile(strFullName)) {
+		return false;
 	}
 
 	return true;
@@ -466,7 +571,7 @@ void CCreate2CompetDlg::OnBnClickedBtnCompet()
 		m_ConSettingDlg.vGetAddressSocket(strServName);
 	}
 	else {
-		m_ctrlCmbServ.GetLBText(m_iCmbServ, strServName);	
+		m_ctrlCmbServ.GetLBText(m_iCmbServ, strServName);
 	}
 	sprintf_s(szAddr, "%S", (LPCTSTR)strServName);
 
@@ -706,14 +811,26 @@ void CCreate2CompetDlg::vUpdateLock(bool bCheck)
 void CCreate2CompetDlg::OnBnClickedButton2()
 {
 	m_ConSettingDlg.DoModal();
-
+	
 	//m_pConSock->bSetSendMessage(MSG_UPDATE);
 }
+
+
 
 // 暫定コントロール
 void CCreate2CompetDlg::OnBnClickedButton3()
 {
-	m_pConSock->bSetSendMessage(MSG_QUIT);
+	CDrawMap::vWindowTestOn();
+	//CDrawMap::vWindowTestOff();
+	//m_pConSock->bSetSendMessage(MSG_QUIT);
+}
+
+// 暫定コントロール
+void CCreate2CompetDlg::OnBnClickedButton5()
+{
+	//CDrawMap::vWindowTestOn();
+	CDrawMap::vWindowTestOff();
+	//m_pConSock->bSetSendMessage(MSG_QUIT);
 }
 
 
@@ -744,12 +861,14 @@ LRESULT CCreate2CompetDlg::OnUserMessage(WPARAM wParam, LPARAM lParam)
 			if (m_pDrawMap->bUpdateTimer() == false) {
 
 				// 別スレッドから競技を停止する
-				_beginthread(vStopCompetThread, 0, this);
+				//_beginthread(vStopCompetThread, 0, this);
 
 				// ボタン表示の変更
 				m_ctrlBtnStart.SetWindowText(m_tszBtnExec[m_enExecStat]);
 				m_ctrlBtnStart.SetFaceColor(m_crBtnExec[m_enExecStat], FALSE);
 				UpdateData(FALSE);
+
+				vStopCompet();
 
 				m_enExecStat = EXEC_STAT_STOP;			
 			}
